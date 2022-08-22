@@ -1,3 +1,4 @@
+import datetime
 import json
 import socket
 import threading
@@ -26,8 +27,9 @@ class User:
                     case 'connect': self.connect()
                     case 'send': self.send()
                     case 'disconnect': self.disconnect()
-        except Exception as e:
-            print(e)
+                    case 'rooms': self.rooms()
+                    case 'get_users': self.get_users()
+        except:
             self.disconnect()
 
     def create(self):
@@ -53,10 +55,11 @@ class User:
         self.usr.send(str(['ER']).encode())
     
     def send(self):
+        today = datetime.datetime.today()
         for i in rooms:
             if i['room_name'] == self.room_name and i['room_password'] == self.room_password:
                 for j in i['users']:
-                    j['usr'].send(str([self.login, self.msg[1]]).encode())
+                    j['usr'].send(str([today.strftime('%H:%M:%S'), self.login, self.msg[1]]).encode())
 
     def disconnect(self):
         try:
@@ -72,6 +75,23 @@ class User:
                     return
         except:
             pass
+    
+    def rooms(self):
+        temp = []
+        for i in rooms:
+            temp.append(i['room_name'])
+        self.usr.send(str(temp).encode())
+    
+    def get_users(self):
+        temp = []
+        for i, j in enumerate(rooms):
+            if j['room_name'] == self.room_name:
+                for users in rooms[i]['users']:
+                    temp.append(users['username'])
+        self.usr.send(str(['Users list', temp]).encode())
+
+    
+
 
 def main():
 	while True:

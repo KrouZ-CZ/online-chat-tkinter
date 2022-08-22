@@ -9,6 +9,7 @@ from tkinter.messagebox import *
 
 from cryptography.fernet import Fernet
 
+
 def get_ip() -> str:
     return "127.0.0.1"
 
@@ -38,23 +39,28 @@ class Socket:
             showerror("Error", "Couldn't connect to server")
             sys.exit()
 
-    def get(self, key):
+    def get(self, key: str) -> list:
         self.client.send(key.encode())
-        return json.loads(self.client.recv(1024).decode().replace("'", '"'))[0]
+        return json.loads(self.client.recv(1024).decode().replace("'", '"'))
 
     def listen(self, s):
         self.client.send(str(['send', encr.encrypt(b'Connect', s.pwd)]).encode())
         try:
             while True:
                 self.temp = self.client.recv(1024).decode('utf-8')
-                self.msgs = s.text.get(1.0, tk.END)
-                s.text.delete(1.0, tk.END)
                 if self.temp == 'Disconnect':
                     break
+                self.data = json.loads(self.temp.replace("'", '"'))
+                if self.data[0] == 'Users list':
+                    users = self.data[1]
+                    message = 'Список участников:\n'
+                    for user in users:
+                        message += user + '\n'
+                    showinfo(title='Участники', message=message)
                 else:
-                    self.data = json.loads(self.temp.replace("'", '"'))
-                    self.msgs = f"{self.msgs}{self.data[0]}: {encr.decrypt(self.data[1], s.pwd).decode()}"
-                    s.text.insert(1.0, self.msgs)
+                    s.text.insert(tk.END, f'[{self.data[0]}] ', 'time')
+                    s.text.insert(tk.END, self.data[1], 'nickname')
+                    s.text.insert(tk.END, f': {encr.decrypt(self.data[2], s.pwd).decode()}\n')
         except:
             s.chat.destroy()
             s.create_menu()
@@ -66,18 +72,20 @@ class Menu(tk.Tk):
         tk.Tk.__init__(self, master)
         self.title("Онлайн чат")
         self.resizable(False, False)
-        self.geometry("400x500")
 
         self.create_menu()
     def create_chat(self):
+        self.geometry("400x500")
         self.chat = tk.Frame(width=400, height=500)
 
         self.label4 = ttk.Label(master=self.chat, text=f'Имя: {self.login}, Комната: {self.room}')
         self.text = tk.Text(master=self.chat, width=32, height=15)
         self.entr4 = ttk.Entry(master=self.chat)
+        self.entr4.bind('<Return>', self.send)
         self.btn2 = ttk.Button(master=self.chat, text='Отправить', command=self.send)
         self.btn3 = ttk.Button(master=self.chat, text='Назад', command=self.disconnect)
         self.btn4 = ttk.Button(master=self.chat, text='Выход', command=self.exitt)
+        self.btn5 = ttk.Button(master=self.chat, text='Участники', command=self.get_users)
 
         self.label4.place(x = 30, y = 10)
         self.text.place(x = 30, y = 50)
@@ -85,10 +93,14 @@ class Menu(tk.Tk):
         self.btn2.place(x = 280, y = 380)
         self.btn3.place(x = 30, y = 420)
         self.btn4.place(x = 160, y = 420)
+        self.btn5.place(x = 280, y = 420)
 
+        self.text.tag_config('time', foreground='blue')
+        self.text.tag_config('nickname', foreground='red')
         self.chat.place(x = 0, y = 0)
 
     def create_menu(self):
+        self.geometry("400x270")
         self.menu = tk.Frame(width=400, height=500)
 
         self.label1 = ttk.Label(master=self.menu, text='Имя: ')
@@ -103,28 +115,30 @@ class Menu(tk.Tk):
         self.connect = tk.Radiobutton(master=self.menu, text='Подключится', variable=self.var, value=1)
         self.btn1 = ttk.Button(master=self.menu, text='Начать', command=self.start)
         self.exittt = ttk.Button(master=self.menu, text='Выход', command=self.exitt)
+        self.get = ttk.Button(master=self.menu, text='Список комнат', command=self.get_rooms)
 
         self.label1.place(x = 30, y = 30)
-        self.entr1.place(x = 120, y = 30)
+        self.entr1.place(x = 120, y = 30, width = 270)
         self.label2.place(x = 30, y = 70)
-        self.entr2.place(x = 120, y = 70)
+        self.entr2.place(x = 120, y = 70, width = 270)
         self.label3.place(x = 30, y = 110)
-        self.entr3.place(x = 120, y = 110)
+        self.entr3.place(x = 120, y = 110, width = 270)
         self.create.place(x = 30, y = 160)
         self.connect.place(x = 160, y = 160)
         self.btn1.place(x = 30, y = 210)
         self.exittt.place(x = 150, y = 210)
+        self.get.place(x = 270, y = 210)
 
         self.menu.place(x = 0, y = 0)
 
-    def send(self):
+    def send(self, *a):
         chat.send(self.entr4.get(), self.pwd)
 
     def start(self):
         if self.var.get() == 0:
-            a = chat.get(str(["create", self.entr1.get(), self.entr2.get(), self.entr3.get()]))
+            a = chat.get(str(["create", self.entr1.get(), self.entr2.get(), self.entr3.get()]))[0]
         else:
-            a = chat.get(str(["connect", self.entr1.get(), self.entr2.get(), self.entr3.get()]))
+            a = chat.get(str(["connect", self.entr1.get(), self.entr2.get(), self.entr3.get()]))[0]
         if a == 'NC':
             showerror('Error', 'Комната с таким именем уже сущетсвует')
             return
@@ -148,6 +162,16 @@ class Menu(tk.Tk):
 
     def exitt(self):
         self.destroy()
+
+    def get_rooms(self):
+        rooms = chat.get(str(['rooms']))
+        message = 'Список комнат:\n'
+        for room in rooms:
+            message += room + '\n'
+        showinfo(title='Комнаты', message=message)
+
+    def get_users(self):
+        chat.client.send(str(['get_users']).encode())
 
 if __name__ == "__main__":
     chat = Socket(get_ip(), 2000)
