@@ -183,8 +183,6 @@ class Get_ip(tk.Tk):
         self.btn1 = ttk.Button(text="OK", command=self.ok)
         self.btn2 = ttk.Button(text="Отменить", command=self.cancel)
 
-        # self.label.place(x = 0, y = 0)
-        # self.entr1.place(x = 0, y = 75, width = 200)
         self.label.place(x = 0, y = 0)
         self.entr1.place(x = 0, y = 75, width = 200)
         self.btn1.place(x = 0, y = 110)
