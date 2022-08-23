@@ -9,9 +9,7 @@ from tkinter.messagebox import *
 
 from cryptography.fernet import Fernet
 
-
-def get_ip() -> str:
-    return "127.0.0.1"
+IP = '127.0.0.1'
 
 class Encryptor:
 	def encrypt(self, text: bytes, key: str) -> str:
@@ -36,7 +34,7 @@ class Socket:
         try:
             self.sock = self.client.connect((host, port))
         except:
-            showerror("Error", "Couldn't connect to server")
+            showerror("Error", "Сервер выключен")
             sys.exit()
 
     def get(self, key: str) -> list:
@@ -173,7 +171,36 @@ class Menu(tk.Tk):
     def get_users(self):
         chat.client.send(str(['get_users']).encode())
 
+class Get_ip(tk.Tk):
+    def __init__(self, master=None):
+        tk.Tk.__init__(self, master)
+        self.title("Онлайн чат")
+        self.resizable(False, False)
+        self.geometry('250x150')
+
+        self.label = ttk.Label(text='Введите IP адрес сервера\nОК - применить\nОтмена - по умолчанию')
+        self.entr1 = ttk.Entry()
+        self.btn1 = ttk.Button(text="OK", command=self.ok)
+        self.btn2 = ttk.Button(text="Отменить", command=self.cancel)
+
+        # self.label.place(x = 0, y = 0)
+        # self.entr1.place(x = 0, y = 75, width = 200)
+        self.label.place(x = 0, y = 0)
+        self.entr1.place(x = 0, y = 75, width = 200)
+        self.btn1.place(x = 0, y = 110)
+        self.btn2.place(x = 110, y = 110)
+
+    def ok(self):
+        global IP
+        IP = self.entr1.get()
+        self.destroy()
+
+    def cancel(self):
+        self.destroy()
+
+
 if __name__ == "__main__":
-    chat = Socket(get_ip(), 2000)
+    Get_ip().mainloop()
+    chat = Socket(IP, 2000)
     ui = Menu()
     ui.mainloop()

@@ -56,6 +56,7 @@ class User:
     
     def send(self):
         today = datetime.datetime.today()
+        print(f"[{today.strftime('%H:%M:%S')}] {self.login}: {self.msg[1]}")
         for i in rooms:
             if i['room_name'] == self.room_name and i['room_password'] == self.room_password:
                 for j in i['users']:
